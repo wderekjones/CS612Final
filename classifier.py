@@ -16,15 +16,15 @@ from bnf import *
 # for a conv-pool block as in [number_filters, kernel_size, pool_stride]
 filt_1 = [30,5,3]       #Configuration for conv1 in [num_filt,kern_size,pool_stride]
 filt_2 = [12,5,3]
-num_fc_1 = 30        #Number of neurons in hully connected layer
-max_iterations = 2000#Max iterations
+num_fc_1 = 30        #Number of neurons in fully connected layer
+max_iterations = 2000   #Max iterations
 batch_size = 50     # Batch size
 dropout = 0.5       #Dropout rate in the fully connected layer
 learning_rate = 1e-3
 num_classes = 2     # Number of classes. Will be useful for multiple labels
 
 """Load the data"""
-music = True
+"""music = True
 if music:
     #Load the csv. Due to the appending in Matlab, the first row is faulty
   data = np.loadtxt('data_music.csv',delimiter=',',skiprows=1)
@@ -50,7 +50,25 @@ D = X_train.shape[1]
 y_train = data[ind[:ind_stop_train],0]
 y_val = data[ind[ind_stop_train:ind_stop_val],0]
 y_test = data[ind[ind_stop_val:],0]
-print('For training, we have %s observations with %s dimensions'%(N,D))
+print('For training, we have %s observations with %s dimensions'%(N,D)) """
+
+
+data = np.loadtxt('music_data_2class.csv',delimiter=',')
+labels = np.loadtxt('music_labels_2class.csv')
+
+X_train = data
+X_val = data
+X_test = data
+N = X_train.shape[0]
+Ntest = X_test.shape[0]
+D = X_train.shape[1]
+
+y_train = labels
+y_val = labels
+y_test = labels
+
+
+
 
 #Proclaim the epochs
 epochs = np.floor(batch_size*max_iterations / N)
