@@ -186,7 +186,7 @@ merged = tf.merge_all_summaries()
 perf_collect = np.zeros((4,int(np.floor(max_iterations /200))))
 
 with tf.Session() as sess:
-  writer = tf.train.SummaryWriter("/home/rob/Dropbox/ml_projects/music/log_tb", sess.graph_def)
+  writer = tf.train.SummaryWriter("/home/carl/workspace/CS612Final", sess.graph_def)
 
   sess.run(tf.initialize_all_variables())
 
