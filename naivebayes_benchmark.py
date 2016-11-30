@@ -13,8 +13,6 @@ labels = np.loadtxt('music_labels_2class.csv')
 
 model.fit(examples, labels)
 
-#preds = model.predict(examples)
-
 num_folds = 10
 
 kf = KFold(n_splits= num_folds, shuffle=True)
