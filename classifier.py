@@ -10,7 +10,8 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import clip_ops
 from bnf import *
 from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, train_test_split
+from sklearn import preprocessing
 
 """Hyperparameters"""
 # The graph is build with conv-pool blocks. One list as below denotes the settings
@@ -18,26 +19,35 @@ from sklearn.model_selection import KFold
 filt_1 = [30,5,3]       #Configuration for conv1 in [num_filt,kern_size,pool_stride]
 filt_2 = [12,5,3]
 num_fc_1 = 30        #Number of neurons in fully connected layer
-max_iterations = 20   #Max iterations
-batch_size = 50     # Batch size
+max_iterations = 100   #Max iterations
+batch_size = 5     # Batch size
 dropout = 0.5       #Dropout rate in the fully connected layer
-learning_rate = 1e-3
-num_classes = 2     # Number of classes. Will be useful for multiple labels
+learning_rate = .000001
+num_classes = 9     # Number of classes. Will be useful for multiple labels
 
 
-data = np.loadtxt('music_data_2class.csv',delimiter=',')
+data = np.loadtxt('music_data_2class.csv', delimiter=',')
 labels = np.loadtxt('music_labels_2class.csv')
 
+
+# scale the data
+data = preprocessing.scale(data)
+
+
 X_train = data
-X_val = data
 X_test = data
+
+y_train = labels
+y_test = labels
+
+X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.5, random_state=10)
+
+
+
 N = X_train.shape[0]
 Ntest = X_test.shape[0]
 D = X_train.shape[1]
 
-y_train = labels
-y_val = labels
-y_test = labels
 
 
 # Nodes for the input variables (placeholders)
@@ -164,22 +174,38 @@ with tf.Session() as sess:
 
     sess.run(tf.initialize_all_variables())
 
+
+
+
     for i in range(max_iterations):
 
-        num_folds = 5
+        batch_ind = np.random.choice(N, batch_size, replace=False)
 
-        kf = KFold(n_splits=num_folds, shuffle=True)
+        sess.run(train_step, feed_dict={x: X_train[batch_ind], y_: y_train[batch_ind], keep_prob: dropout, bn_train: True})
 
-        for train, test in kf.split(X_train, y_train):
+        print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: dropout, bn_train: True})))
 
-            batch_xs = X_train[train]
-            batch_ys = y_train[train]
 
-            test_xs = X_train[test]
-            test_ys = y_train[test]
 
-            sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
-            print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})))
 
-    result = sess.run([accuracy, numel], feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: False})
-    print(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: False}))
+        #for i in range(max_iterations):
+
+    #num_folds = 5
+
+    #kf = KFold(n_splits=num_folds, shuffle=True)
+
+    #i = 0
+
+    #for train, test in kf.split(X_train, y_train):
+
+    #    batch_xs = X_train[train]
+    #    batch_ys = y_train[train]
+
+    #    test_xs = X_train[test]
+    #    test_ys = y_train[test]
+
+    #    sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
+    #    print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})))
+    #    i += 1
+    #result = sess.run([accuracy, numel], feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: False})
+    #print(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: False}))
