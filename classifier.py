@@ -5,6 +5,11 @@ Created on April 29 10:43:29 2016
 """
 import numpy as np
 import tensorflow as tf
+
+import matplotlib
+
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 from tensorflow.python.framework import ops
 from tensorflow.python.ops import clip_ops
@@ -165,6 +170,9 @@ with tf.name_scope("Evaluating_accuracy") as scope:
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
     accuracy_summary = tf.scalar_summary("accuracy", accuracy)
 
+with tf.name_scope("Generating_Predictions") as scope:
+    prediction = tf.argmax(h_fc2, 1)
+
 #Note on argmax and softmax
 #In the two blocks of code above, we use softmax to generate a final disctribution.
 #We use argmax to evaluate the accuracy. Both functions are superfluous for the
@@ -177,7 +185,8 @@ with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
 
 
-    #accuracy_table = np.array(max_iterations,1)
+    train_error_table = np.zeros([1, max_iterations])
+    test_error_table = np.zeros([1,max_iterations])
 
 
     for i in range(max_iterations):
@@ -189,7 +198,8 @@ with tf.Session() as sess:
 
         kf = KFold(n_splits=num_folds, shuffle=True)
 
-
+        avg_train_err = 0.0
+        avg_test_err = 0.0
         for train, test in kf.split(X_train, y_train):
 
             batch_xs = X_train[train]
@@ -199,44 +209,18 @@ with tf.Session() as sess:
             test_ys = y_train[test]
 
             sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
-            print ("Accuracy on train data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})))
-            print ("Accuracy on test data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})))
+
+            avg_train_err += sess.run(accuracy,feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})
+            avg_test_err += sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})
+
+        train_error_table[0, i] = (float(avg_train_err)/float(num_folds))
+        test_error_table[0, i] = (float(avg_test_err)/float(num_folds))
+
+
+            #print ("Accuracy on train data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})))
+            #print ("Accuracy on test data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})))
 
 
 
-
-
-
-
-        #batch_ind = np.random.choice(N, batch_size, replace=False)
-
-        #sess.run(train_step, feed_dict={x: X_train[batch_ind], y_: y_train[batch_ind], keep_prob: dropout, bn_train: True})
-
-        #print(str(sess.run(accuracy, feed_dict={x: X_train[batch_ind], y_: y_train[batch_ind], keep_prob:1, bn_train: True})))
-
-        #print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: True})))
-
-
-
-
-        #for i in range(max_iterations):
-
-    #num_folds = 5
-
-    #kf = KFold(n_splits=num_folds, shuffle=True)
-
-    #i = 0
-
-    #for train, test in kf.split(X_train, y_train):
-
-    #    batch_xs = X_train[train]
-    #    batch_ys = y_train[train]
-
-    #    test_xs = X_train[test]
-    #    test_ys = y_train[test]
-
-    #    sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
-    #    print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})))
-    #    i += 1
-    #result = sess.run([accuracy, numel], feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: False})
-    #print(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: False}))
+    predictions = sess.run(prediction, feed_dict={x:X_test, dropout:1.0, bn_train: True})
+    confusion = confusion_matrix(predictions,labels)
