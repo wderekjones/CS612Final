@@ -16,13 +16,15 @@ from sklearn import preprocessing
 """Hyperparameters"""
 # The graph is build with conv-pool blocks. One list as below denotes the settings
 # for a conv-pool block as in [number_filters, kernel_size, pool_stride]
-filt_1 = [30,5,3]       #Configuration for conv1 in [num_filt,kern_size,pool_stride]
-filt_2 = [12,5,3]
+#filt_1 = [30,5,3]       #Configuration for conv1 in [num_filt,kern_size,pool_stride]
+filt_1 = [15,5,3]
+#filt_2 = [12,5,3]
+filt_2 = [6,5,3]
 num_fc_1 = 30        #Number of neurons in fully connected layer
 max_iterations = 100   #Max iterations
 batch_size = 5     # Batch size
 dropout = 0.5       #Dropout rate in the fully connected layer
-learning_rate = .000001
+learning_rate = .0001
 num_classes = 9     # Number of classes. Will be useful for multiple labels
 
 
@@ -179,11 +181,36 @@ with tf.Session() as sess:
 
     for i in range(max_iterations):
 
-        batch_ind = np.random.choice(N, batch_size, replace=False)
 
-        sess.run(train_step, feed_dict={x: X_train[batch_ind], y_: y_train[batch_ind], keep_prob: dropout, bn_train: True})
 
-        print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: dropout, bn_train: True})))
+
+        num_folds = 5
+
+        kf = KFold(n_splits=num_folds, shuffle=True)
+
+
+        for train, test in kf.split(X_train, y_train):
+
+            batch_xs = X_train[train]
+            batch_ys = y_train[train]
+
+            test_xs = X_train[test]
+            test_ys = y_train[test]
+
+            sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
+            print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})))
+
+
+
+
+
+        #batch_ind = np.random.choice(N, batch_size, replace=False)
+
+        #sess.run(train_step, feed_dict={x: X_train[batch_ind], y_: y_train[batch_ind], keep_prob: dropout, bn_train: True})
+
+        #print(str(sess.run(accuracy, feed_dict={x: X_train[batch_ind], y_: y_train[batch_ind], keep_prob:1, bn_train: True})))
+
+        #print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: X_test, y_: y_test, keep_prob: 1.0, bn_train: True})))
 
 
 
