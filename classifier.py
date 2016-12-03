@@ -213,12 +213,12 @@ with tf.Session() as sess:
             avg_train_err += sess.run(accuracy,feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})
             avg_test_err += sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})
 
+            print ("Accuracy on train data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})))
+            print ("Accuracy on test data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})))
+
         train_error_table[0, i] = (float(avg_train_err)/float(num_folds))
         test_error_table[0, i] = (float(avg_test_err)/float(num_folds))
 
-
-            #print ("Accuracy on train data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})))
-            #print ("Accuracy on test data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})))
 
 
 
