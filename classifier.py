@@ -177,6 +177,7 @@ with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
 
 
+    #accuracy_table = np.array(max_iterations,1)
 
 
     for i in range(max_iterations):
@@ -198,7 +199,10 @@ with tf.Session() as sess:
             test_ys = y_train[test]
 
             sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
-            print ("Accuracy after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})))
+            print ("Accuracy on train data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})))
+            print ("Accuracy on test data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})))
+
+
 
 
 
