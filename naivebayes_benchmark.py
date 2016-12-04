@@ -1,8 +1,12 @@
 import numpy as np
 
 from sklearn.naive_bayes import GaussianNB
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.model_selection import KFold
+from confusionplot import plot_confusion_matrix
+
+
+max_iters = 100
 
 
 model = GaussianNB()
@@ -13,32 +17,53 @@ labels = np.loadtxt('music_labels_2class.csv')
 
 model.fit(examples, labels)
 
-num_folds = 10
+num_folds = 5
 
 kf = KFold(n_splits= num_folds, shuffle=True)
 
-avg_performance = 0.0
+
+mean_performance = 0.0
 
 
-for train, test in kf.split(examples, labels):
-    batch_xs = examples[train]
-    batch_ys = labels[train]
+for i in range(max_iters):
 
-    test_xs = examples[test]
-    test_ys = labels[test]
+    avg_performance = 0.0
 
-    preds = model.predict(test_xs)
+    for train, test in kf.split(examples, labels):
+        batch_xs = examples[train]
+        batch_ys = labels[train]
 
-    performance = accuracy_score(labels[test],preds)
+        test_xs = examples[test]
+        test_ys = labels[test]
 
-    avg_performance += performance
+        preds = model.predict(test_xs)
 
-    print ('Accuracy: ' + str(performance))
+        performance = accuracy_score(labels[test],preds)
+
+        avg_performance += performance
+
+    avg_performance = float(avg_performance) / float(num_folds)
+
+    mean_performance += avg_performance
 
 
-avg_performance = float(avg_performance) / float(num_folds)
+    print ("Average Accuracy" + " at step "+str(i)+": " + str(avg_performance))
 
-print ("Average Accuracy: " + str(avg_performance))
 
+mean_performance = float(mean_performance) / float(max_iters)
+
+
+
+PER = 1 - mean_performance
+
+print ("PER =  " + str(PER))
+
+finalpreds = model.predict(examples)
+
+confusion = confusion_matrix(labels,finalpreds)
+
+class_labels = [0,1,2,3,4,5,6,7,8]
+
+plot_confusion_matrix(confusion,classes=class_labels,plotname='NaiveBayes_benchmark.png',normalize=True)
 
 

@@ -1,11 +1,14 @@
 import numpy as np
 
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.model_selection import KFold
+from confusionplot import plot_confusion_matrix
 
 
-model = KNeighborsClassifier(n_neighbors=3)
+max_iters = 100
+
+model = KNeighborsClassifier(n_neighbors=3, metric="minkowski", p=2)
 
 examples = np.loadtxt('music_data_2class.csv', delimiter=',')
 
@@ -13,32 +16,50 @@ labels = np.loadtxt('music_labels_2class.csv')
 
 model.fit(examples, labels)
 
-num_folds = 10
+num_folds = 5
 
 kf = KFold(n_splits= num_folds, shuffle=True)
 
-avg_performance = 0.0
+
+mean_performance = 0.0
 
 
-for train, test in kf.split(examples, labels):
-    batch_xs = examples[train]
-    batch_ys = labels[train]
+for i in range(max_iters):
+    avg_performance = 0.0
 
-    test_xs = examples[test]
-    test_ys = labels[test]
+    for train, test in kf.split(examples, labels):
+        batch_xs = examples[train]
+        batch_ys = labels[train]
 
-    preds = model.predict(test_xs)
+        test_xs = examples[test]
+        test_ys = labels[test]
 
-    performance = accuracy_score(labels[test],preds)
+        preds = model.predict(test_xs)
 
-    avg_performance += performance
+        performance = accuracy_score(labels[test],preds)
 
-    print ('Accuracy: ' + str(performance))
+        avg_performance += performance
+
+    avg_performance = float(avg_performance) / float(num_folds)
+
+    mean_performance += avg_performance
 
 
-avg_performance = float(avg_performance) / float(num_folds)
-
-print ("Average Accuracy: " + str(avg_performance))
+    print ("Average Accuracy" + " at step "+str(i)+": " + str(avg_performance))
 
 
+mean_performance = float(mean_performance) / float(max_iters)
+
+
+PER = 1 - mean_performance
+
+print ("PER =  " + str(PER))
+
+finalpreds = model.predict(examples)
+
+confusion = confusion_matrix(labels,finalpreds)
+
+class_labels = [0,1,2,3,4,5,6,7,8]
+
+plot_confusion_matrix(confusion,classes=class_labels,plotname='KNN_benchmark.png',normalize=True)
 

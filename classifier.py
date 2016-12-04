@@ -8,7 +8,6 @@ import tensorflow as tf
 
 import matplotlib
 
-matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 from tensorflow.python.framework import ops
@@ -21,11 +20,10 @@ from sklearn import preprocessing
 """Hyperparameters"""
 # The graph is build with conv-pool blocks. One list as below denotes the settings
 # for a conv-pool block as in [number_filters, kernel_size, pool_stride]
-#filt_1 = [30,5,3]       #Configuration for conv1 in [num_filt,kern_size,pool_stride]
-filt_1 = [15,5,3]
-#filt_2 = [12,5,3]
-filt_2 = [6,5,3]
-num_fc_1 = 30        #Number of neurons in fully connected layer
+#Configuration for conv1 in [num_filt,kern_size,pool_stride]
+filt_1 = [30,5,3]
+filt_2 = [12,5,3]
+num_fc_1 = 50        #Number of neurons in fully connected layer
 max_iterations = 100   #Max iterations
 batch_size = 5     # Batch size
 dropout = 0.5       #Dropout rate in the fully connected layer
@@ -40,12 +38,6 @@ labels = np.loadtxt('music_labels_2class.csv')
 # scale the data
 data = preprocessing.scale(data)
 
-
-X_train = data
-X_test = data
-
-y_train = labels
-y_test = labels
 
 X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.5, random_state=10)
 
@@ -106,7 +98,7 @@ with tf.name_scope("Conv2") as scope:
     b_conv2 = bias_variable([filt_2[0]], 'bias_for_Conv_Layer_2')
     a_conv2 = conv2d(h_pool1, W_conv2) + b_conv2
     h_conv2 = a_conv2
-    # h_conv2 = tf.nn.relu(a_conv2) #ReLU after batchnorm
+    h_conv2 = tf.nn.relu(a_conv2) #ReLU after batchnorm
 
 with tf.name_scope('max_pool2') as scope:
     h_pool2 = tf.nn.max_pool(h_conv2, ksize=[1, filt_2[2], 1, 1],
@@ -132,17 +124,23 @@ with tf.name_scope("Fully_Connected1") as scope:
     h_fc1 = tf.nn.relu(tf.matmul(h_flat, W_fc1) + b_fc1)
 
 
+
+
+
 with tf.name_scope("Output_layer") as scope:
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
     W_fc2 = tf.Variable(tf.truncated_normal([num_fc_1, num_classes], stddev=0.1),name = 'W_fc2')
     b_fc2 = tf.Variable(tf.constant(0.1, shape=[num_classes]),name = 'b_fc2')
     h_fc2 = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
     size3 = tf.shape(h_fc2)       #Debugging purposes
+    #prediction = tf.argmax(h_fc2, 1)
+
 
 with tf.name_scope("SoftMax") as scope:
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(h_fc2, y_)
     cost = tf.reduce_sum(loss) / batch_size
     loss_summ = tf.scalar_summary("cross entropy_loss", cost)
+
 with tf.name_scope("train") as scope:
     tvars = tf.trainable_variables()
     grads = tf.gradients(cost, tvars)
@@ -170,9 +168,6 @@ with tf.name_scope("Evaluating_accuracy") as scope:
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
     accuracy_summary = tf.scalar_summary("accuracy", accuracy)
 
-with tf.name_scope("Generating_Predictions") as scope:
-    prediction = tf.argmax(h_fc2, 1)
-
 #Note on argmax and softmax
 #In the two blocks of code above, we use softmax to generate a final disctribution.
 #We use argmax to evaluate the accuracy. Both functions are superfluous for the
@@ -185,9 +180,7 @@ with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
 
 
-    train_error_table = np.zeros([1, max_iterations])
-    test_error_table = np.zeros([1,max_iterations])
-
+    mean_performance = 0.0
 
     for i in range(max_iterations):
 
@@ -198,8 +191,8 @@ with tf.Session() as sess:
 
         kf = KFold(n_splits=num_folds, shuffle=True)
 
-        avg_train_err = 0.0
-        avg_test_err = 0.0
+        avg_performance = 0.0
+
         for train, test in kf.split(X_train, y_train):
 
             batch_xs = X_train[train]
@@ -210,17 +203,19 @@ with tf.Session() as sess:
 
             sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
 
-            avg_train_err += sess.run(accuracy,feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})
-            avg_test_err += sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})
+            avg_performance += sess.run(accuracy,feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})
 
-            print ("Accuracy on train data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})))
-            print ("Accuracy on test data after "+str(i)+" iterations: "+str(sess.run(accuracy, feed_dict={x: test_xs, y_: test_ys, keep_prob: 1.0, bn_train: True})))
+        avg_performance = float(avg_performance) / float(num_folds)
 
-        train_error_table[0, i] = (float(avg_train_err)/float(num_folds))
-        test_error_table[0, i] = (float(avg_test_err)/float(num_folds))
+        mean_performance += avg_performance
+
+        print ("Average Accuracy" + " at step " + str(i) + ": " + str(avg_performance))
+
+mean_performance = float(mean_performance) / float(max_iterations)
+
+PER = 1 - mean_performance
+
+print ("PER =  " + str(PER))
 
 
 
-
-    predictions = sess.run(prediction, feed_dict={x:X_test, dropout:1.0, bn_train: True})
-    confusion = confusion_matrix(predictions,labels)
