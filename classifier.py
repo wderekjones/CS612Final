@@ -213,9 +213,10 @@ with tf.Session() as sess:
 
 mean_performance = float(mean_performance) / float(max_iterations)
 
-PER = 1 - mean_performance
 
-print ("PER =  " + str(PER))
+avg_misclass_error = 1 - mean_performance
+
+print ("Misclassification Error =  " + str(avg_misclass_error))
 
 
 

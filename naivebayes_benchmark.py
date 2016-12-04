@@ -54,9 +54,9 @@ mean_performance = float(mean_performance) / float(max_iters)
 
 
 
-PER = 1 - mean_performance
+avg_misclass_error = 1 - mean_performance
 
-print ("PER =  " + str(PER))
+print ("Misclassification Error =  " + str(avg_misclass_error))
 
 finalpreds = model.predict(examples)
 

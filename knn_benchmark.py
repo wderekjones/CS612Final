@@ -48,12 +48,10 @@ for i in range(max_iters):
     print ("Average Accuracy" + " at step "+str(i)+": " + str(avg_performance))
 
 
-mean_performance = float(mean_performance) / float(max_iters)
+avg_misclass_error = 1 - mean_performance
 
+print ("Misclassification Error =  " + str(avg_misclass_error))
 
-PER = 1 - mean_performance
-
-print ("PER =  " + str(PER))
 
 finalpreds = model.predict(examples)
 
