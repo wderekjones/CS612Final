@@ -23,10 +23,10 @@ from sklearn import preprocessing
 #Configuration for conv1 in [num_filt,kern_size,pool_stride]
 filt_1 = [30,5,3]
 filt_2 = [12,5,3]
-num_fc_1 = 50        #Number of neurons in fully connected layer
-max_iterations = 100   #Max iterations
-batch_size = 5     # Batch size
-dropout = 0.5       #Dropout rate in the fully connected layer
+num_fc_1 = 30        #Number of neurons in fully connected layer
+max_iterations = 2000   #Max iterations
+batch_size = 50     # Batch size
+dropout = 0.3       #Dropout rate in the fully connected layer
 learning_rate = .0001
 num_classes = 9     # Number of classes. Will be useful for multiple labels
 
@@ -39,7 +39,7 @@ labels = np.loadtxt('music_labels_2class.csv')
 data = preprocessing.scale(data)
 
 
-X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.5, random_state=10)
+X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.3, random_state=10)
 
 
 
@@ -180,43 +180,18 @@ with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
 
 
-    mean_performance = 0.0
+    mean_accuracy = 0.0
 
     for i in range(max_iterations):
 
+        batch_ind = np.random.choice(N,batch_size, replace=False)
+
+
+        sess.run(train_step,feed_dict={x:X_train[batch_ind], y_: y_train[batch_ind], keep_prob: dropout, bn_train:True})
+        if i % 5 == 0:
+            print(sess.run(accuracy,feed_dict={x:X_train[batch_ind], y_: y_train[batch_ind], keep_prob: 1.0, bn_train:True}))
 
 
 
-        num_folds = 5
 
-        kf = KFold(n_splits=num_folds, shuffle=True)
-
-        avg_performance = 0.0
-
-        for train, test in kf.split(X_train, y_train):
-
-            batch_xs = X_train[train]
-            batch_ys = y_train[train]
-
-            test_xs = X_train[test]
-            test_ys = y_train[test]
-
-            sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: dropout, bn_train: True})
-
-            avg_performance += sess.run(accuracy,feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 1.0, bn_train: True})
-
-        avg_performance = float(avg_performance) / float(num_folds)
-
-        mean_performance += avg_performance
-
-        print ("Average Accuracy" + " at step " + str(i) + ": " + str(avg_performance))
-
-mean_performance = float(mean_performance) / float(max_iterations)
-
-
-avg_misclass_error = 1 - mean_performance
-
-print ("Misclassification Error =  " + str(avg_misclass_error))
-
-
-
+    print("Test Accuracy: ") + str(sess.run(accuracy,feed_dict={x:X_test,y_:y_test, keep_prob:1.0, bn_train:False}))
